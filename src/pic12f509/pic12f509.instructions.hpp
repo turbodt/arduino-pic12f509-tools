@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <sstream>
 #include <map>
+#include <regex>
 
 #include "pic12f509.typing.hpp"
 #include "pic12f509.constants.hpp"
@@ -70,8 +71,8 @@ namespace pic12f509 {
   const std::map<const std::string, const word_t> INSTRUCTIONS = {
     { "ADDWF",  0x1C0 },
     { "ANDWF",  0x140 },
-  //  { "CLRF", 0x060 },
-  //  { "CLRW", 0x040 },
+    { "CLRF", 0x060 },
+    { "CLRW", 0x040 },
     { "CLR",    0x040 },
     { "COMF",   0x240 },
     { "DECF",   0x0C0 },

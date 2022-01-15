@@ -36,11 +36,21 @@ namespace pic12f509 {
     }
 
     file_addr = file_addr_to_str(instruction & INS_FILE_MASK);
-    if (masked_instruction == INSTRUCTIONS.at("MOVWF")) {
+    if (masked_instruction == INSTRUCTIONS.at("CLR") ) {
+      switch (instruction & INS_DESTINATION_MASK) {
+        case INS_DESTINATION_F:
+          return "CLRF " + file_addr;
+          break;
+        case INS_DESTINATION_W:
+          return "CLRW";
+          break;
+      }
+    } else if (masked_instruction == INSTRUCTIONS.at("MOVWF")) {
       return opcode_str + " " + file_addr;
     } else {
-      return opcode_str + " " + destination + " " + file_addr;
+      return opcode_str + " " + file_addr + "," + destination;
     }
+    return "UNKNOWN";
   }
 
   std::string bit_oop_to_str(word_t const & instruction) {
@@ -58,7 +68,7 @@ namespace pic12f509 {
 
     std::string bit = std::to_string((instruction & INS_BIT_ADDR_MASK) >> 5);
     std::string file_addr = file_addr_to_str(instruction & INS_FILE_MASK);
-    return opcode_str + " " + bit + " " + file_addr;
+    return opcode_str + " " + file_addr + "," + bit;
   }
 
   std::string literal_control_oop_to_str(word_t const & instruction) {
@@ -127,6 +137,7 @@ namespace pic12f509 {
   ) {
 
     to_upper(instruction_str);
+    instruction_str = std::regex_replace(instruction_str, std::regex("[;,]"), " ");
 
     std::stringstream ss;
     ss << instruction_str;
@@ -143,6 +154,8 @@ namespace pic12f509 {
       return INSTRUCTIONS.at("OPTION");
     } else if (opcode_str == "SLEEP") {
       return INSTRUCTIONS.at("SLEEP");
+    } else if (opcode_str == "CLRW") {
+      return INSTRUCTIONS.at("CLRW");
     } else if (opcode_str == "TRIS") {
       instruction = INSTRUCTIONS.at("TRIS");
     }
@@ -163,7 +176,14 @@ namespace pic12f509 {
 
     if (
       instruction == INSTRUCTIONS.at("TRIS")
-      || instruction == INSTRUCTIONS.at("MOVWF")
+    ) {
+      std::string file_addr_str;
+      ss >> file_addr_str;
+      word_t file_addr = str_to_literal(file_addr_str);
+      return instruction | (file_addr & INS_FILE_MASK);
+    } else if (
+      instruction == INSTRUCTIONS.at("MOVWF")
+      || instruction == INSTRUCTIONS.at("CLRF")
     ) {
       std::string file_addr_str;
       ss >> file_addr_str;
@@ -171,6 +191,8 @@ namespace pic12f509 {
       return instruction | (file_addr & INS_FILE_MASK);
     } else if (is_instruction_byte_oop(instruction)) {
       std::string destination_str, file_addr_str;
+      ss >> file_addr_str;
+      word_t file_addr = str_to_file_addr(file_addr_str);
       word_t destination = 0;
       ss >> destination_str;
       if (destination_str == "F") {
@@ -178,13 +200,11 @@ namespace pic12f509 {
       } else {
         destination = INS_DESTINATION_W;
       }
-      ss >> file_addr_str;
-      word_t file_addr = str_to_file_addr(file_addr_str);
       return instruction | destination | (file_addr & INS_FILE_MASK);
     } else if (is_instruction_bit_oop(instruction)) {
       uint8_t bit;
       std::string file_addr_str;
-      ss >> bit >> file_addr_str;
+      ss >> file_addr_str >> bit;
       word_t file_addr = str_to_file_addr(file_addr_str);
       return instruction | ((bit <<5) & INS_BIT_ADDR_MASK) | (file_addr & INS_FILE_MASK);
     } else if (is_instruction_literal_control_oop(instruction)) {

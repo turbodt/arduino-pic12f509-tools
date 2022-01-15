@@ -1,0 +1,63 @@
+; Example command
+;
+; This program blinks a led every second
+;
+
+setup
+  movwf osccal
+  ; configure option register
+  ; 1 1 0 0 1 0 0 0
+  ; | | | | | =====--> pre escaler value 1:2
+  ; | | | | *--------> assgin pre escaler to WDT
+  ; | | | *----------> increment on low-to-high transition on the T0CKI pin
+  ; | | *------------> transition on internal instruction cycle
+  ; | *--------------> disable weak pull ups
+  ; *----------------> disable wake-up on pin change
+  movlw b'11000000'
+  option
+  ; configure GP1 as output
+  movlw b'11111101'
+  tris 6
+
+  movlw 0x00
+  movwf gpio
+
+loop
+  movlw 0x02
+  movwf gpio ; gpio is a default location
+  call delay1s
+  movlw 0x00
+  movwf gpio
+  call delay1s
+  goto loop
+end
+  sleep
+
+
+delay1s
+  ;  4Mhz / (4 cycles/op) => 1M ops per sec
+  ;  1s => 1000000 ops
+  ;
+                              ; 2 ops from the CALL
+  movlw d'05'                 ; 1 ops
+  movwf 07h                   ; 1 ops
+  delay1s__deep1              ; 5*(2 + 199994 + 3) - 2 + 1 = 999994 ops
+    movlw d'201'              ; | 1 ops
+    movwf 08h                 ; | 1 ops
+    delay1s__deep2            ; | 201*(3 + 989 + 3) - 2 +1 = 199994 ops
+      movlw d'165'            ;   | 1 ops
+      movwf 09h               ;   | 1 ops
+      nop                     ;   | 1 ops
+      delay1s__deep3          ;   | 165*(3 + 3) - 2 +1 = 989 ops
+        nop                   ;     | 1 ops
+        nop                   ;     | 1 ops
+        nop                   ;     | 1 ops
+        decfsz 09h,f          ;     | 1 ops + 1 ops on skiping
+        goto delay1s__deep3   ;     | 2 ops
+      decfsz 08h,f            ;   | 1 ops + 1 ops on skiping
+      goto delay1s__deep2     ;   | 2 ops
+    decfsz 07h,f              ; | 1 ops + 1 ops on skiping
+    goto delay1s__deep1       ; | 2 ops
+
+  retlw 0                     ; 2 ops from the RETLW
+

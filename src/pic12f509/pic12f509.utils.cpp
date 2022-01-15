@@ -2,6 +2,21 @@
 
 
 namespace pic12f509 {
+
+  std::regex regex_file_addr_hex = std::regex("([0-9A-Fa-f]+)[hH]");
+  std::regex regex_literal_hex = std::regex("0[xX]([0-9A-Fa-f]+)|[hH]'([0-9A-Fa-f]+)'|([0-9A-Fa-f]+)");
+  std::regex regex_literal_bin = std::regex("[bB]'([01]+)'");
+  std::regex regex_literal_dec = std::regex("[dD]'([0-9]+)'");
+
+  std::string get_first_not_empty_submatch(std::smatch const & sm) {
+    for (uint8_t i = 1 ; i < sm.size() ; i ++) {
+      if ( sm[i].length() > 0) {
+        return sm[i];
+      }
+    }
+    return "";
+  }
+
   std::string word_to_str(word_t const & instruction) {
     std::stringstream ss;
     ss << "0x"
@@ -69,16 +84,15 @@ namespace pic12f509 {
       }
     }
 
-    if (file_addr_str.substr(0,2) == "0X") {
-      file_addr_str.erase(0,2);
+    addr_t file_addr = 0;
+    std::smatch sm_hex;
+    std::regex_match(file_addr_str,sm_hex,regex_file_addr_hex);
+    if (sm_hex.size() > 1) {
+      std::stringstream ss;
+      ss << std::hex << sm_hex[1];
+      ss >> file_addr;
     }
-    if (file_addr_str.at(file_addr_str.size()-1) == 'H') {
-      file_addr_str.erase(file_addr_str.size()-1);
-    }
-    std::stringstream ss;
-    ss << std::hex << file_addr_str;
-    addr_t file_addr;
-    ss >> file_addr;
+
     return file_addr;
   }
 
@@ -115,14 +129,20 @@ namespace pic12f509 {
       }
     }
 
-    if (literal_str.substr(0,2) == "0X") {
-      literal_str.erase(0,2);
+    addr_t literal = 0;
+    std::smatch sm;
+    if (std::regex_match(literal_str,sm,regex_literal_hex)) {
+      std::stringstream ss;
+      ss << std::hex << get_first_not_empty_submatch(sm);
+      ss >> literal;
+    } else if (std::regex_match(literal_str,sm,regex_literal_dec)) {
+      std::stringstream ss;
+      ss << get_first_not_empty_submatch(sm);
+      ss >> literal;
+    } else if (std::regex_match(literal_str,sm,regex_literal_bin)) {
+      literal = std::stoi( get_first_not_empty_submatch(sm), nullptr, 2);
     }
 
-    std::stringstream ss;
-    ss << std::hex << literal_str;
-    addr_t literal;
-    ss >> literal;
     return literal;
   }
 

@@ -54,7 +54,7 @@ namespace command_compile {
       std::string first_word;
       ss >> first_word;
       trim(first_word);
-      if (first_word.length() > 0 && is_line_comment(first_word)) {
+      if (first_word.length() == 0 || is_line_comment(first_word)) {
         continue;
       }
       pic12f509::word_t opcode = pic12f509::str_to_instruction(first_word);
@@ -71,7 +71,7 @@ namespace command_compile {
         trim(line);
       };
 
-      if (line == "") {
+      if (line.length() == 0 || is_line_comment(line)) {
         continue;
       }
       pic12f509::word_t instruction = pic12f509::str_to_instruction(line, labels);
