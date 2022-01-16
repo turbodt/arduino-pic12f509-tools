@@ -25,6 +25,10 @@ namespace delay_loop {
     return a.is_null;
   }
 
+  uint16_t num_instructions(const delay_seq_info & a) {
+    return a.accumulated_extra_ops + 4 * a.deep;
+  }
+
   bool is_similar_to(const delay_seq_info & a, const delay_seq_info & b) {
     return a.deep == b.deep && a.accumulated_extra_ops == b.accumulated_extra_ops;
   }
@@ -34,6 +38,11 @@ namespace delay_loop {
       return false;
     } else if (is_null(b)) {
       return true;
+    }
+    if (num_instructions(a) < num_instructions(b)) {
+      return true;
+    } else if (num_instructions(b) < num_instructions(a)) {
+      return false;
     }
     if (a.deep < b.deep) {
       return true;
@@ -191,49 +200,92 @@ namespace delay_loop {
 
 
   void generate_code(
+      std::string const & label,
+      pic12f509::addr_t const & file_addr,
       std::vector<std::string> & code,
       const ullint & num_operations,
       uint8_t rec_lvl = 0
   ) {
     std::string t = repeat_str("  ", rec_lvl);
+
+    if (rec_lvl == 0) {
+      delay_seq_info const seq = generate_delay(num_operations - 4);
+      std::string used_file_addresses = pic12f509::file_addr_to_str(file_addr);
+      for (pic12f509::addr_t i = 1 ; i < seq.deep; i++) {
+        used_file_addresses += ", " + pic12f509::file_addr_to_str(file_addr + i);
+      }
+      code.push_back(t + label);
+      code.push_back(t + "  ;  To call and to return from this subroutine takes");
+      code.push_back(t + "  ;  takes exactly " + std::to_string(num_operations) + " operations in " + std::to_string(num_instructions(seq) + 1) + " instructions.");
+      code.push_back(t + "  ;  Uses file addresses: " + used_file_addresses);
+      code.push_back("");
+      code.push_back(t + "  ; 2 operations from CALL");
+      code.push_back("");
+      generate_code(label, file_addr, code, num_operations - 4, rec_lvl+1);
+      code.push_back("");
+      code.push_back(t + "  ; 2 operations from RETLW");
+      code.push_back(t + "  RETLW 0X00");
+      return;
+    }
+
+    std::string label_deep = label + "_deep_" + std::to_string(rec_lvl);
+
     delay_seq_info const seq = generate_delay(num_operations);
     if (is_null(seq)) {
       code.clear();
       code.push_back("; is imposible to generate that delay");
     }
-//DEBUG:    std::cerr << "X_n = " << (int)seq.value
-//DEBUG:      << "\tA_n = " << (int)seq.extra_ops
-//DEBUG:      << "\tS(A_n) = " << (int)seq.accumulated_extra_ops
-//DEBUG:      << "\tn = " << (int)seq.deep
-//DEBUG:      << std::endl;
+
     if (seq.deep > 0) {
-      code.push_back(t + "movlw " + pic12f509::word_to_str(seq.value));
-      code.push_back(t + "movfw " + pic12f509::file_addr_to_str(7 + rec_lvl));
+      code.push_back(t + "MOVLW d'" + std::to_string(seq.value) + "'");
+      code.push_back(t + "MOVWF " + pic12f509::file_addr_to_str(file_addr));
     }
     for (uint8_t i = 0 ; i < seq.extra_ops; i++) {
-      code.push_back(t + "nop");
+      code.push_back(t + "NOP");
     }
     if (seq.deep > 0) {
-      code.push_back(t + "deep_" + std::to_string(rec_lvl));
+      code.push_back(t + label_deep);
       ullint prev_num_operations = (num_operations -1 -seq.extra_ops) /seq.value -3;
-      generate_code(code, prev_num_operations, rec_lvl+1);
-      code.push_back(t + "  decfsz " + pic12f509::file_addr_to_str(7 + rec_lvl) + ",f");
-      code.push_back(t + "  goto deep_" + std::to_string(rec_lvl));
+      generate_code(label, file_addr + 1, code, prev_num_operations, rec_lvl+1);
+      code.push_back(t + "  DECFSZ " + pic12f509::file_addr_to_str(file_addr) + ",f");
+      code.push_back(t + "  GOTO " + label_deep);
     }
+  }
+
+  void print_options() {
+    std::cerr << "Options:\n"
+      << "  -l, --label        Defines the name of the subroutine.\n"
+      << "  -f, --address      Defines the starting file address which counters\n"
+      << "                     of the delay will use.\n"
+      << std::endl;
   }
 
   int main(int argc, char * argv[]) {
 
     if (argc < 2) {
       std::cerr << "Required filename and comm: " << argv[0] << " <num_ops>" << std::endl;
+      print_options();
       return 1;
     }
     ullint num_operations = std::strtoull(argv[1], nullptr, 10);
-    std::cout << "; subrutine a delay using " << num_operations
-      << " operations" << std::endl;
+    std::string label = "delay";
+    pic12f509::addr_t file_addr = 7;
+    for (uint8_t i = 2 ; i < argc ; i++ ) {
+      std::string flag = argv[i];
+      if (flag == "-l" || flag == "--label") {
+        i++;
+        label = std::string(argv[i]);
+      } else if (flag == "-f" || flag == "--address") {
+        i++;
+        file_addr = pic12f509::str_to_file_addr(argv[i]);
+      } else {
+        print_options();
+        return 1;
+      }
+    }
 
     std::vector<std::string> code = std::vector<std::string>();
-    generate_code(code, num_operations);
+    generate_code(label, file_addr,code, num_operations);
     for (std::string line : code) {
       std::cout << line << std::endl;
     }
