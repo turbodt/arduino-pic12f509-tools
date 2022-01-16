@@ -7,7 +7,7 @@
 
 #include "pic12f509/pic12f509.interface.hpp"
 #include "pic12f509/pic12f509.typing.hpp"
-#include "shared/main.cpp"
+#include "shared/main.hpp"
 
 namespace command_compile {
   std::vector<std::uint8_t> extract_bytes(std::vector<pic12f509::word_t>::const_iterator const & it) {

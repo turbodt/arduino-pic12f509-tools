@@ -1,4 +1,6 @@
-// source: https://stackoverflow.com/questions/216823/how-to-trim-a-stdstring
+#ifndef H_INCLUDE_SHARED
+#define H_INCLUDE_SHARED
+
 #include <iostream>
 #include <algorithm>
 
@@ -22,3 +24,4 @@ static inline void trim(std::string &s) {
     rtrim(s);
 }
 
+#endif
