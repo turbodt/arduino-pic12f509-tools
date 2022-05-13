@@ -6,7 +6,7 @@
 #include "../shared/main.hpp"
 #include "../pic12f509/pic12f509.utils.hpp"
 
-namespace coding_generation {
+namespace code_generation {
 namespace delay_loop {
 
   typedef unsigned long long int ullint;
