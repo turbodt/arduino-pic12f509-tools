@@ -7,8 +7,8 @@ setup
   movwf osccal
   ; configure option register
   ; 1 1 0 0 1 0 0 0
-  ; | | | | | =====--> pre escaler value 1:2
-  ; | | | | *--------> assgin pre escaler to WDT
+  ; | | | | | =====--> pre scaler value 1:2 for TMR0 or 1:1 for WDT
+  ; | | | | *--------> assgin pre scaler to WDT
   ; | | | *----------> increment on low-to-high transition on the T0CKI pin
   ; | | *------------> transition on internal instruction cycle
   ; | *--------------> disable weak pull ups
