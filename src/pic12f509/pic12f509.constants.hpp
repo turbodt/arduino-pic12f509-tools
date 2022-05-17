@@ -44,7 +44,7 @@ namespace pic12f509 {
   const std::map<const std::string, const addr_t> FILE_ADDR= {
     { "INDF", 0x000 },
     { "TMR0", 0x001 },
-    { "PLC", 0x002 },
+    { "PCL", 0x002 },
     { "STATUS", 0x003 },
     { "FSR", 0x004 },
     { "OSCCAL", 0x005 },

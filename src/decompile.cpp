@@ -44,7 +44,7 @@ namespace command_decompile {
     }
     fh.close();
 
-    for (uint8_t i = 0; i < num_instructions; i++) {
+    for (uint16_t i = 0; i < num_instructions; i++) {
       pic12f509::word_t instruction = instructions[i];
       // out
       std::cout << ""
