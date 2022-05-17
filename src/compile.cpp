@@ -90,13 +90,56 @@ namespace command_compile {
     return 0;
   }
 
-  int main(int argc, char * argv[]) {
+  std::string get_help(int argc, char * argv[]) {
+    std::stringstream ss;
+    ss << "Usage: " << argv[0] << " <output-file>" << " [OPTIONS]";
+    ss << std::endl << std::endl << "Positional Arguments:" << std::endl;
+    ss << std::endl << "  " << "output-file";
+    ss << "\t" << "Output `.hex` file where the output binary data will be write.";
+    ss << std::endl << std::endl << "Options:" << std::endl;
+    ss << std::endl << "  " << "-h";
+    ss << "\t" << "Print help";
+    return ss.str();
+  }
 
-    if (argc < 2) {
-      std::cerr << "Required filename: " << argv[0] << " file.hex" << std::endl;
+  std::vector<std::string> const * parse_pos_args(int argc, char * argv[]) {
+    std::vector<std::string> * pos_args = new std::vector<std::string>(0);
+    uint8_t i = 0;
+    while (i < argc) {
+      if (argv[i][0] != '-') {
+        pos_args->push_back(std::string(argv[i]));
+      }
+      i++;
+    }
+    return (std::vector<std::string> const *) pos_args;
+  }
+
+  std::map<const std::string, const std::string> * parse_opts(int argc, char * argv[]) {
+    std::map<const std::string, const std::string> * opts = new std::map<const std::string, const std::string>();
+    uint8_t i = 0;
+    while (i < argc) {
+      std::string arg(argv[i]);
+      if (arg[0] != '-') {
+        // do nothing
+      } else if (arg == "--help" || arg == "-h") {
+        opts->insert(std::pair{"help", std::string("")});
+      } else if (arg == "--verbose" || arg == "-v") {
+        opts->insert(std::pair{"verbose", std::string("")});
+      }
+      i++;
+    }
+    return opts;
+  }
+
+  int main(int argc, char * argv[]) {
+    auto pos_args = parse_pos_args(argc, argv);
+    auto opts = parse_opts(argc, argv);
+
+    if (opts->count("help") || pos_args->size() != 2) {
+      std::cerr << get_help(argc, argv) << std::endl;
       return 1;
     }
-    std::filesystem::path filename = std::string(argv[1]);
+    std::filesystem::path filename = pos_args->at(1);
 
     std::string line;
     std::vector<std::string> * lines = new std::vector<std::string>();
@@ -121,8 +164,34 @@ namespace command_compile {
     if (error) {
       return error;
     }
+
+
+    std::map<const std::string, const pic12f509::addr_t> * labels_beyond_0ff = new std::map<const std::string, const pic12f509::addr_t>();
+    std::for_each(labels->begin(), labels->end(), [&](auto it) {
+      if (it.second >= 0x0FF) {
+        labels_beyond_0ff->insert(std::pair<const std::string, const pic12f509::addr_t>(it.first, it.second));
+      }
+    });
     delete lines;
     delete labels;
+
+    if (labels_beyond_0ff->size() > 0) {
+      std::cout << "WARNING!" << std::endl;
+      std::cout << "There are " << labels_beyond_0ff->size() << " labels beyond 0x1FF address." << std::endl;
+      std::for_each(labels_beyond_0ff->begin(), labels_beyond_0ff->end(), [&](auto it) {
+        std::cout << "\t- \"" << it.first << "\" at address "<< it.second << std::endl;
+      });
+    }
+    delete labels_beyond_0ff;
+
+    // verbose
+    if (opts->count("verbose")) {
+      std::cout << "It uses " << instructions->size() << " 12-bit instructions";
+      std::cout << " (" << (3*instructions->size()/2) << " Bytes)";
+      std::cout << " of 1024 instructions (1536 Bytes)."<< std::endl;
+      std::cout << "That represents about a " << (100 * instructions->size() / 1024);
+      std::cout << "% of the program memory."<< std::endl;
+    }
 
     // output
     std::fstream fh = std::fstream(filename, std::ios::out | std::ios::binary);
@@ -139,6 +208,8 @@ namespace command_compile {
     fh.close();
     delete instructions;
 
+    delete opts;
+    delete pos_args;
     return 0;
   }
 }
