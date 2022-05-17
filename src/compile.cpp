@@ -164,8 +164,25 @@ namespace command_compile {
     if (error) {
       return error;
     }
+
+
+    std::map<const std::string, const pic12f509::addr_t> * labels_beyond_0ff = new std::map<const std::string, const pic12f509::addr_t>();
+    std::for_each(labels->begin(), labels->end(), [&](auto it) {
+      if (it.second >= 0x0FF) {
+        labels_beyond_0ff->insert(std::pair<const std::string, const pic12f509::addr_t>(it.first, it.second));
+      }
+    });
     delete lines;
     delete labels;
+
+    if (labels_beyond_0ff->size() > 0) {
+      std::cout << "WARNING!" << std::endl;
+      std::cout << "There are " << labels_beyond_0ff->size() << " labels beyond 0x1FF address." << std::endl;
+      std::for_each(labels_beyond_0ff->begin(), labels_beyond_0ff->end(), [&](auto it) {
+        std::cout << "\t- \"" << it.first << "\" at address "<< it.second << std::endl;
+      });
+    }
+    delete labels_beyond_0ff;
 
     // verbose
     if (opts->count("verbose")) {
