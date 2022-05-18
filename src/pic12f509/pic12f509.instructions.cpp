@@ -2,29 +2,47 @@
 
 namespace pic12f509 {
 
+  std::string get_optcode_str(word_t const & instruction) {
+    // default value
+    std::string optcode = "UNKNOWN";
+    // candidates
+    std::map<const word_t, const std::string> * candidates = new std::map<const word_t, const std::string>();
+    std::for_each(INSTRUCTIONS.begin(), INSTRUCTIONS.end(), [&](auto it) {
+      candidates->insert(std::pair<const word_t, const std::string> (it->second, it->first));
+    });
+
+    // iteratively filtering
+    word_t mask = 0x000;
+    for (uint16_t p = 0x800; p > 0 && candidates->size() > 1 ; p = p >> 1) {
+      mask += (p & instruction);
+      for (auto it = candidates->begin(); it != candidates->end(); ) {
+        bool pass = (mask & it->first) == (mask & instruction);
+        if (!pass) {
+          it++;
+        } else {
+          candidates->erase(it);
+        }
+      }
+    }
+    if (candidates->size() == 1) {
+      optcode = candidates->begin()->second;
+    }
+    delete candidates;
+    return optcode;
+  }
+
   std::string byte_oop_to_str(word_t const & instruction) {
     word_t masked_instruction = instruction & INS_BYTE_OOP_MASK;
+    std::string opcode_str = get_optcode_str(instruction);
 
-    std::string opcode_str = "UNKNOWN";
-    if (instruction == 0) {
+    if (optcode_str == "UNKNOWN") {
+      return "UNKNOWN";
+    } else if (optcode_str == "NOP") {
       return "NOP";
-    } else if (! masked_instruction ) {
-      masked_instruction = INSTRUCTIONS.at("MOVWF");
-      opcode_str = "MOVWF";
     }
 
     std::string destination = "";
     std::string file_addr = "";
-
-    for (
-      std::map<const std::string, const word_t>::const_iterator it = INSTRUCTIONS.begin();
-      it != INSTRUCTIONS.end() && opcode_str == "UNKNOWN";
-      it++
-    ) {
-      if (masked_instruction == it->second) {
-        opcode_str = it->first;
-      }
-    }
 
     switch (instruction & INS_DESTINATION_MASK) {
       case INS_DESTINATION_F:
