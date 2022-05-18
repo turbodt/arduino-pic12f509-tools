@@ -2,13 +2,34 @@
 
 namespace pic12f509 {
 
-  std::string get_optcode_str(word_t const & instruction) {
+  word_t obtain_from_mask(word_t const & mask, word_t const & value) {
+    word_t result = mask & value;
+    for (word_t i = mask; i > 0 && i % 2 == 0; i /= 2) {
+      result /= 2;
+    }
+    return result;
+  }
+
+  word_t blend_with_mask(word_t const & current_value, word_t const & mask, word_t const & value) {
+    uint8_t offset = 0;
+    for (word_t i = mask; i > 0 && i % 2 == 0; i /= 2) {
+      offset++;
+    }
+    word_t masked_value = (mask >> offset) & value;
+    while (offset > 0) {
+      masked_value *= 2;
+      offset--;
+    }
+    return (current_value & (~mask)) + masked_value;
+  }
+
+  std::string const get_opcode_str(word_t const & instruction) {
     // default value
-    std::string optcode = "UNKNOWN";
+    std::string opcode_str = "UNKNOWN";
     // candidates
     std::map<const word_t, const std::string> * candidates = new std::map<const word_t, const std::string>();
-    std::for_each(INSTRUCTIONS.begin(), INSTRUCTIONS.end(), [&](auto it) {
-      candidates->insert(std::pair<const word_t, const std::string> (it->second, it->first));
+    std::for_each(OPERATORS.begin(), OPERATORS.end(), [&](auto pair) {
+      candidates->insert(std::pair<const word_t, const std::string> (pair.second.opcode, pair.first));
     });
 
     // iteratively filtering
@@ -25,135 +46,60 @@ namespace pic12f509 {
       }
     }
     if (candidates->size() == 1) {
-      optcode = candidates->begin()->second;
+      opcode_str = candidates->begin()->second;
     }
     delete candidates;
-    return optcode;
+    return opcode_str;
   }
 
-  std::string byte_oop_to_str(word_t const & instruction) {
-    word_t masked_instruction = instruction & INS_BYTE_OOP_MASK;
-    std::string opcode_str = get_optcode_str(instruction);
-
-    if (optcode_str == "UNKNOWN") {
-      return "UNKNOWN";
-    } else if (optcode_str == "NOP") {
-      return "NOP";
-    }
-
-    std::string destination = "";
-    std::string file_addr = "";
-
-    switch (instruction & INS_DESTINATION_MASK) {
-      case INS_DESTINATION_F:
-        destination = "f";
-        break;
-      case INS_DESTINATION_W:
-        destination = "W";
-        break;
-    }
-
-    file_addr = file_addr_to_str(instruction & INS_FILE_MASK);
-    if (masked_instruction == INSTRUCTIONS.at("CLR") ) {
-      switch (instruction & INS_DESTINATION_MASK) {
-        case INS_DESTINATION_F:
-          return "CLRF " + file_addr;
-          break;
-        case INS_DESTINATION_W:
-          return "CLRW";
-          break;
-      }
-    } else if (masked_instruction == INSTRUCTIONS.at("MOVWF")) {
-      return opcode_str + " " + file_addr;
-    } else {
-      return opcode_str + " " + file_addr + "," + destination;
-    }
-    return "UNKNOWN";
-  }
-
-  std::string bit_oop_to_str(word_t const & instruction) {
-    word_t masked_instruction = instruction & INS_BIT_OOP_MASK;
-    std::string opcode_str = "UNKNOWN";
-    for (
-      std::map<const std::string, const word_t>::const_iterator it = INSTRUCTIONS.begin();
-      it != INSTRUCTIONS.end() && opcode_str == "UNKNOWN";
-      it++
-    ) {
-      if (masked_instruction == it->second) {
-        opcode_str = it->first;
-      }
-    }
-
-    std::string bit = std::to_string((instruction & INS_BIT_ADDR_MASK) >> 5);
-    std::string file_addr = file_addr_to_str(instruction & INS_FILE_MASK);
-    return opcode_str + " " + file_addr + "," + bit;
-  }
-
-  std::string literal_control_oop_to_str(word_t const & instruction) {
-    word_t masked_instruction = instruction & INS_LIT_CTRL_OOP_MASK;
-
-    if (instruction == INSTRUCTIONS.at("CLRWDT")) {
-      return "CLRWDT";
-    } else if (instruction == INSTRUCTIONS.at("OPTION")) {
-      return "OPTION";
-    } else if (instruction == INSTRUCTIONS.at("SLEEP")) {
-      return "SLEEP";
-    } else if (instruction < 8) {
-      return "TRIS " + word_to_str(instruction & 0x007);
-    }
-
-    std::string opcode_str = "UNKNOWN";
-    for (
-      std::map<const std::string, const word_t>::const_iterator it = INSTRUCTIONS.begin();
-      it != INSTRUCTIONS.end() && opcode_str == "UNKNOWN";
-      it++
-    ) {
-      if (masked_instruction == it->second) {
-        opcode_str = it->first;
-      }
-    }
-
-    std::string literal = word_to_str(instruction & INS_LITERAL_MASK);
-    return opcode_str + " " + literal;
-  }
-
-
-  bool is_instruction_byte_oop(word_t const & instruction) {
-    return instruction < 0x400
-      && instruction != INSTRUCTIONS.at("OPTION")
-      && instruction != INSTRUCTIONS.at("CLRWDT")
-      && instruction != INSTRUCTIONS.at("SLEEP")
-      && !(instruction > 0 && instruction < 8); //TRIS instruction
-  }
-
-  bool is_instruction_bit_oop(word_t const & instruction) {
-    return instruction < 0x800 && instruction >= 0x400;
-  }
-
-  bool is_instruction_literal_control_oop(word_t const & instruction) {
-    return instruction >= 0x800
-      || instruction == INSTRUCTIONS.at("OPTION")
-      || instruction == INSTRUCTIONS.at("CLRWDT")
-      || instruction == INSTRUCTIONS.at("SLEEP")
-      || (instruction > 0 && instruction < 8); //TRIS instruction
+  OperatorInfo const * get_operator_info(word_t const & instruction) {
+    std::string opcode_str = get_opcode_str(instruction);
+    return &(OPERATORS.at(opcode_str));
   }
 
   std::string instruction_to_str(word_t const & instruction) {
-    if (is_instruction_byte_oop(instruction)) {
-      return byte_oop_to_str(instruction);
-    } else if (is_instruction_bit_oop(instruction)) {
-      return bit_oop_to_str(instruction);
-    } else if (is_instruction_literal_control_oop(instruction)) {
-      return literal_control_oop_to_str(instruction);
+    std::string const opcode_str = get_opcode_str(instruction);
+    OperatorInfo const * operator_info = get_operator_info(instruction);
+
+    // case literal operands
+    if (operator_info->masks.literal) {
+      word_t literal = obtain_from_mask(operator_info->masks.literal, instruction);
+      return opcode_str + " " + literal_to_str(literal);
     }
-    return "Unknown";
+
+    // case not file address (nor literals) => no operands
+    if (operator_info->masks.file_address == 0) {
+      return opcode_str;
+    }
+
+    word_t file_address = (operator_info->masks.file_address) & instruction;
+    std::string file_address_str = file_addr_to_str(file_address);
+
+    // case file address and destination
+    if (operator_info->masks.destination) {
+      word_t destination = obtain_from_mask(operator_info->masks.destination, instruction);
+      std::string destination_str = "W";
+      if (destination) {
+        destination_str = "f";
+      }
+      return opcode_str + " " + file_address_str + "," + destination_str;
+    }
+
+    // case file address and bit_value
+    if (operator_info->masks.bit_value) {
+      word_t bit_value = obtain_from_mask(operator_info->masks.bit_value, instruction);
+      std::string bit_value_str = std::to_string(bit_value);
+      return opcode_str + " " + file_address_str + "," + bit_value_str;
+    }
+
+    // case only file address
+    return opcode_str + " " + file_address_str;
   }
 
   word_t str_to_instruction(
     std::string  instruction_str,
     const std::map<const std::string, const addr_t> * const addr_labels
   ) {
-
     to_upper(instruction_str);
     instruction_str = std::regex_replace(instruction_str, std::regex("[;,]"), " ");
 
@@ -162,89 +108,50 @@ namespace pic12f509 {
 
     std::string opcode_str;
     ss >> opcode_str;
-    word_t instruction = INSTRUCTIONS.at("UNKNOWN");
 
-    if (opcode_str == "NOP") {
-      return INSTRUCTIONS.at("NOP");
-    } else if (opcode_str == "CLRWDT") {
-      return INSTRUCTIONS.at("CLRWDT");
-    } else if (opcode_str == "OPTION") {
-      return INSTRUCTIONS.at("OPTION");
-    } else if (opcode_str == "SLEEP") {
-      return INSTRUCTIONS.at("SLEEP");
-    } else if (opcode_str == "CLRW") {
-      return INSTRUCTIONS.at("CLRW");
-    } else if (opcode_str == "TRIS") {
-      instruction = INSTRUCTIONS.at("TRIS");
-    }
+    auto operator_info = &(OPERATORS.at(opcode_str));
+    word_t instruction = operator_info->opcode;
 
-    for (
-      std::map<const std::string, const word_t>::const_iterator it = INSTRUCTIONS.begin();
-      it != INSTRUCTIONS.end() && instruction == INSTRUCTIONS.at("UNKNOWN");
-      it++
-    ) {
-      if (opcode_str == it->first) {
-        instruction = it->second;
-      }
-    }
-
-    if (instruction == INSTRUCTIONS.at("UNKNOWN")) {
+    // case literal operands
+    if (operator_info->masks.literal) {
+      std::string literal_str;
+      ss >> literal_str;
+      word_t literal = str_to_literal(literal_str, addr_labels);
+      instruction = blend_with_mask(instruction, operator_info->masks.literal, literal);
       return instruction;
     }
 
-    if (
-      instruction == INSTRUCTIONS.at("TRIS")
-    ) {
-      std::string file_addr_str;
-      ss >> file_addr_str;
-      word_t file_addr = str_to_literal(file_addr_str);
-      return instruction | (file_addr & INS_FILE_MASK);
-    } else if (
-      instruction == INSTRUCTIONS.at("MOVWF")
-      || instruction == INSTRUCTIONS.at("CLRF")
-    ) {
-      std::string file_addr_str;
-      ss >> file_addr_str;
-      word_t file_addr = str_to_file_addr(file_addr_str);
-      return instruction | (file_addr & INS_FILE_MASK);
-    } else if (is_instruction_byte_oop(instruction)) {
-      std::string destination_str, file_addr_str;
-      ss >> file_addr_str;
-      word_t file_addr = str_to_file_addr(file_addr_str);
-      word_t destination = 0;
-      ss >> destination_str;
-      if (destination_str == "F") {
-        destination = INS_DESTINATION_F;
-      } else {
-        destination = INS_DESTINATION_W;
-      }
-      return instruction | destination | (file_addr & INS_FILE_MASK);
-    } else if (is_instruction_bit_oop(instruction)) {
-      uint8_t bit;
-      std::string file_addr_str;
-      ss >> file_addr_str >> bit;
-      word_t file_addr = str_to_file_addr(file_addr_str);
-      return instruction | ((bit <<5) & INS_BIT_ADDR_MASK) | (file_addr & INS_FILE_MASK);
-    } else if (is_instruction_literal_control_oop(instruction)) {
-      std::string literal_str;
-      ss >> literal_str;
-      word_t literal;
-      if (
-        instruction == INSTRUCTIONS.at("GOTO")
-        || instruction == INSTRUCTIONS.at("CALL")
-      ) {
-        literal = str_to_literal(literal_str, addr_labels);
-      } else {
-        literal = str_to_literal(literal_str);
-      }
-
-      if (instruction == INSTRUCTIONS.at("GOTO")) {
-        return instruction | (literal & INS_LITERAL_GOTO_MASK);
-      } else {
-        return instruction | (literal & INS_LITERAL_MASK);
-      }
+    // case not file address (nor literals) => no operands
+    if (operator_info->masks.file_address == 0) {
+      return instruction;
     }
 
+    std::string file_address_str;
+    ss >> file_address_str;
+    word_t file_address = str_to_file_addr(file_address_str);
+    instruction = blend_with_mask(instruction, operator_info->masks.file_address, file_address);
+
+    // case file address and destination
+    if (operator_info->masks.destination) {
+      std::string destination_str;
+      ss >> destination_str;
+      word_t destination = 0;
+      if (destination_str == "1" || destination_str == "F") {
+        destination = 1;
+      }
+      instruction = blend_with_mask(instruction, operator_info->masks.destination, destination);
+      return instruction;
+    }
+
+    // case file address and bit_value
+    if (operator_info->masks.bit_value) {
+      word_t bit_value;
+      ss >> bit_value;
+      instruction = blend_with_mask(instruction, operator_info->masks.bit_value, bit_value);
+      return instruction;
+    }
+
+    // case only file address
     return instruction;
   }
 }

@@ -15,6 +15,7 @@
 namespace pic12f509 {
 
   std::string word_to_str(word_t const &);
+  std::string literal_to_str(word_t const &);
   std::string file_addr_to_str(addr_t const &);
   addr_t str_to_file_addr(
     std::string,

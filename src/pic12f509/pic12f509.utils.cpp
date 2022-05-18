@@ -17,14 +17,29 @@ namespace pic12f509 {
     return "";
   }
 
-  std::string word_to_str(word_t const & instruction) {
+  std::string word_to_str(word_t const & value) {
     std::stringstream ss;
     ss << "0x"
       << std::setfill('0')
       << std::setw(3)
       << std::hex
       << std::uppercase
-      << instruction;
+      << value;
+    return ss.str();
+  }
+
+  std::string literal_to_str(word_t const & value) {
+    uint8_t num_digits = 2;
+    if (value > 255) {
+      num_digits = 3;
+    }
+    std::stringstream ss;
+    ss << "0x"
+      << std::setfill('0')
+      << std::setw(num_digits)
+      << std::hex
+      << std::uppercase
+      << value;
     return ss.str();
   }
 

@@ -26,56 +26,60 @@ namespace pic12f509 {
   const word_t INS_LIT_CTRL_OOP_MASK = 0xF00;
   const word_t INS_LIT_CTRL_OOP_GOTO_MASK = 0xE00;
 
-  const std::map<const std::string, const word_t> INSTRUCTIONS = {
-    { "ADDWF",  0x1C0 },
-    { "ANDWF",  0x140 },
-    { "CLRF", 0x060 },
-    { "CLRW", 0x040 },
-    { "CLR",    0x040 },
-    { "COMF",   0x240 },
-    { "DECF",   0x0C0 },
-    { "DECFSZ", 0x2C0 },
-    { "INCF",   0x280 },
-    { "INCFSZ", 0x3C0 },
-    { "IORWF",  0x100 },
-    { "MOVF",   0x200 },
-    { "MOVWF",  0x020 },
-    { "NOP",    0x000 },
-    { "RLF",    0x340 },
-    { "RRF",    0x300 },
-    { "SUBWF",  0x080 },
-    { "SWAPF",  0x380 },
-    { "XORWF",  0x180 },
-  // Byte Oriented Operations
-    { "BCF",    0x400 },
-    { "BSF",    0x500 },
-    { "BTFSC",  0x600 },
-    { "BTFSS",  0x700 },
-  // Literal and Control Oriented Operations
-    { "ANDLW",  0xE00 },
-    { "CALL",   0x900 },
-    { "CLRWDT", 0x004 },
-    { "GOTO",   0xA00 },
-    { "IORLW",  0xD00 },
-    { "MOVLW",  0xC00 },
-    { "OPTION", 0x002 },
-    { "RETLW",  0x800 },
-    { "SLEEP",  0x003 },
-    { "TRIS",   0x000 },
-    { "XORLW",  0xF00 },
-  // CUSTOM
-    { "UNKNOWN",  0x005 }
+  struct OperatorInfo {
+    struct Masks {
+      word_t destination;
+      word_t file_address;
+      word_t literal;
+      word_t byte;
+      word_t bit_value;
+    };
+    word_t opcode;
+    Masks masks;
   };
 
-  std::string get_optcode_str(word_t const &);
+  const std::map<const std::string, const OperatorInfo> OPERATORS = {
+    { "ADDWF", OperatorInfo{.opcode=0x1C0, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "ANDWF", OperatorInfo{.opcode=0x140, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "CLRF",  OperatorInfo{.opcode=0x060, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "CLRW",  OperatorInfo{.opcode=0x040, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "COMF",  OperatorInfo{.opcode=0x240, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "DECF",  OperatorInfo{.opcode=0x0C0, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "DECFSZ",OperatorInfo{.opcode=0x2C0, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "INCF",  OperatorInfo{.opcode=0x280, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "INCFSZ",OperatorInfo{.opcode=0x3C0, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "IORWF", OperatorInfo{.opcode=0x100, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "MOVF",  OperatorInfo{.opcode=0x200, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "MOVWF", OperatorInfo{.opcode=0x020, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "NOP",   OperatorInfo{.opcode=0x000, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "RLF",   OperatorInfo{.opcode=0x340, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "RRF",   OperatorInfo{.opcode=0x300, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "SUBWF", OperatorInfo{.opcode=0x080, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "SWAPF", OperatorInfo{.opcode=0x380, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "XORWF", OperatorInfo{.opcode=0x180, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+  // Byte Oriented Operations
+    { "BCF",   OperatorInfo{.opcode=0x400, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x0E0, .bit_value=0x000} }},
+    { "BSF",   OperatorInfo{.opcode=0x500, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x0E0, .bit_value=0x000} }},
+    { "BTFSC", OperatorInfo{.opcode=0x600, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x0E0, .bit_value=0x000} }},
+    { "BTFSS", OperatorInfo{.opcode=0x700, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x0E0, .bit_value=0x000} }},
+  // Literal and Control Oriented Operations
+    { "ANDLW", OperatorInfo{.opcode=0xE00, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x0FF, .byte=0x000, .bit_value=0x000} }},
+    { "CALL",  OperatorInfo{.opcode=0x900, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x0FF, .byte=0x000, .bit_value=0x000} }},
+    { "CLRWDT",OperatorInfo{.opcode=0x004, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "GOTO",  OperatorInfo{.opcode=0xA00, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x1FF, .byte=0x000, .bit_value=0x000} }},
+    { "IORLW", OperatorInfo{.opcode=0xD00, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x0FF, .byte=0x000, .bit_value=0x000} }},
+    { "MOVLW", OperatorInfo{.opcode=0xC00, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x0FF, .byte=0x000, .bit_value=0x000} }},
+    { "OPTION",OperatorInfo{.opcode=0x002, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "RETLW", OperatorInfo{.opcode=0x800, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x0FF, .byte=0x000, .bit_value=0x000} }},
+    { "SLEEP", OperatorInfo{.opcode=0x003, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "TRIS",  OperatorInfo{.opcode=0x006, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x007, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
+    { "XORLW", OperatorInfo{.opcode=0xF00, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x0FF, .byte=0x000, .bit_value=0x000} }},
+  // CUSTOM
+    { "UNKNOWN", OperatorInfo{.opcode= 0x005, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x000, .byte=0x000, .bit_value=0x000} }}
+  };
 
-  bool is_instruction_byte_oop(word_t const &);
-  bool is_instruction_bit_oop(word_t const &);
-  bool is_instruction_literal_control_oop(word_t const &);
-
-  std::string byte_oop_to_str(word_t const &);
-  std::string bit_oop_to_str(word_t const &);
-  std::string literal_control_oop_to_str(word_t const &);
+  std::string const get_opcode_str(word_t const &);
+  OperatorInfo const * get_operator_info(word_t const &);
 
   std::string instruction_to_str(word_t const &);
   word_t str_to_instruction(
