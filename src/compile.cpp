@@ -90,6 +90,33 @@ namespace command_compile {
     return 0;
   }
 
+  int get_warnings(
+    const std::vector<std::string> * lines,
+    std::vector<pic12f509::word_t> * instructions,
+    std::map<const std::string, const pic12f509::addr_t> * labels,
+    std::vector<std::string> * warnings
+  ) {
+    // get labels beyond 0x0FF
+    std::map<const std::string, const pic12f509::addr_t> * labels_beyond_0ff = new std::map<const std::string, const pic12f509::addr_t>();
+    std::for_each(labels->begin(), labels->end(), [&](auto it) {
+      if (it.second >= 0x0FF) {
+        labels_beyond_0ff->insert(std::pair<const std::string, const pic12f509::addr_t>(it.first, it.second));
+      }
+    });
+    if (labels_beyond_0ff->size()) {
+      std::stringstream ss;
+      ss << "WARNING!" << std::endl;
+      ss << "There are " << labels_beyond_0ff->size() << " labels beyond 0x1FF address." << std::endl;
+      std::for_each(labels_beyond_0ff->begin(), labels_beyond_0ff->end(), [&](auto it) {
+        ss << "\t- \"" << it.first << "\" at address "<< it.second << std::endl;
+      });
+      warnings->push_back(ss.str());
+    }
+    delete labels_beyond_0ff;
+
+    return 0;
+  }
+
   std::string get_help(int argc, char * argv[]) {
     std::stringstream ss;
     ss << "Usage: " << argv[0] << " <output-file>" << " [OPTIONS]";
@@ -145,6 +172,7 @@ namespace command_compile {
     std::vector<std::string> * lines = new std::vector<std::string>();
     std::vector<pic12f509::word_t> * instructions = new std::vector<pic12f509::word_t>();
     std::map<const std::string, const pic12f509::addr_t> * labels = new std::map<const std::string, const pic12f509::addr_t>();
+    std::vector<std::string> * warnings = new std::vector<std::string>();
 
     // get code
     while(std::getline(std::cin, line)) {
@@ -164,25 +192,15 @@ namespace command_compile {
     if (error) {
       return error;
     }
-
-
-    std::map<const std::string, const pic12f509::addr_t> * labels_beyond_0ff = new std::map<const std::string, const pic12f509::addr_t>();
-    std::for_each(labels->begin(), labels->end(), [&](auto it) {
-      if (it.second >= 0x0FF) {
-        labels_beyond_0ff->insert(std::pair<const std::string, const pic12f509::addr_t>(it.first, it.second));
-      }
-    });
+    // get warnings
+    get_warnings(lines, instructions, labels, warnings);
     delete lines;
     delete labels;
 
-    if (labels_beyond_0ff->size() > 0) {
-      std::cout << "WARNING!" << std::endl;
-      std::cout << "There are " << labels_beyond_0ff->size() << " labels beyond 0x1FF address." << std::endl;
-      std::for_each(labels_beyond_0ff->begin(), labels_beyond_0ff->end(), [&](auto it) {
-        std::cout << "\t- \"" << it.first << "\" at address "<< it.second << std::endl;
-      });
-    }
-    delete labels_beyond_0ff;
+    // Raise warnings
+    std::for_each(warnings->begin(), warnings->end(), [&](std::string warning) {
+      std::cerr << warning << std::endl;
+    });
 
     // verbose
     if (opts->count("verbose")) {
