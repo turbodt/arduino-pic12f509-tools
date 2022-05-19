@@ -57,9 +57,10 @@ namespace command_compile {
       if (first_word.length() == 0 || is_line_comment(first_word)) {
         continue;
       }
-      pic12f509::word_t opcode = pic12f509::str_to_instruction(first_word);
 
-      if (opcode == pic12f509::OPERATORS.at("UNKNOWN").opcode) {
+      try {
+        pic12f509::word_t opcode = pic12f509::str_to_instruction(first_word);
+      } catch (pic12f509::CommandDoesNotExistException & exception) {
         // is a label
         labels->insert(
           std::pair<const std::string, const pic12f509::addr_t>(
@@ -74,11 +75,13 @@ namespace command_compile {
       if (line.length() == 0 || is_line_comment(line)) {
         continue;
       }
-      pic12f509::word_t instruction = pic12f509::str_to_instruction(line, labels);
-      if (instruction == pic12f509::OPERATORS.at("UNKNOWN").opcode) {
-        std::cerr << "Unknown instruction '" << line
-          << "' at line " << line_cnt + 1 << std::endl;
-        return 1;
+
+      pic12f509::word_t instruction;
+      try {
+        instruction = pic12f509::str_to_instruction(line, labels);
+      } catch (pic12f509::CommandDoesNotExistException & exception) {
+        exception.update_message("On line " + std::to_string(line_cnt + 1) +": " + exception.what());
+        throw exception;
       }
       instructions->push_back(instruction);
     }

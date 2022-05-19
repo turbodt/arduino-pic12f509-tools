@@ -12,19 +12,6 @@
 #include "pic12f509.utils.hpp"
 
 namespace pic12f509 {
-  // Instructions
-  const word_t INS_DESTINATION_MASK = 0x020;
-  const word_t INS_DESTINATION_W = 0x000;
-  const word_t INS_DESTINATION_F = 0x020;
-  const word_t INS_FILE_MASK = 0x01F;
-  const word_t INS_BIT_ADDR_MASK = 0x0E0;
-  const word_t INS_LITERAL_MASK = 0x0FF;
-  const word_t INS_LITERAL_GOTO_MASK = 0x1FF;
-
-  const word_t INS_BYTE_OOP_MASK = 0xFC0;
-  const word_t INS_BIT_OOP_MASK = 0xF00;
-  const word_t INS_LIT_CTRL_OOP_MASK = 0xF00;
-  const word_t INS_LIT_CTRL_OOP_GOTO_MASK = 0xE00;
 
   struct OperatorInfo {
     struct Masks {
@@ -77,6 +64,9 @@ namespace pic12f509 {
   // CUSTOM
     { "UNKNOWN", OperatorInfo{.opcode= 0x005, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x000, .byte=0x000, .bit_value=0x000} }}
   };
+
+  word_t obtain_from_mask(word_t const &, word_t const &);
+  word_t blend_with_mask(word_t const &, word_t const &, word_t const &);
 
   std::string const get_opcode_str(word_t const &);
   OperatorInfo const * get_operator_info(word_t const &);

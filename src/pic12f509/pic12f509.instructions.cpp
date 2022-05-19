@@ -109,6 +109,10 @@ namespace pic12f509 {
     std::string opcode_str;
     ss >> opcode_str;
 
+    if (OPERATORS.count(opcode_str) == 0) {
+      throw CommandDoesNotExistException(opcode_str);
+    }
+
     auto operator_info = &(OPERATORS.at(opcode_str));
     word_t instruction = operator_info->opcode;
 
