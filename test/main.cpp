@@ -1,4 +1,4 @@
-#include "pic12f509/pic12f509.instructions.cpp"
+#include "pic12f509/main.cpp"
 
 int main(int argc, char * argv[]) {
   int error = 0;

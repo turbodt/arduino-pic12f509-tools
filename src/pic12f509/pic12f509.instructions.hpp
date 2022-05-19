@@ -45,10 +45,10 @@ namespace pic12f509 {
     { "SWAPF", OperatorInfo{.opcode=0x380, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
     { "XORWF", OperatorInfo{.opcode=0x180, .masks=OperatorInfo::Masks{.destination=0x020, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x000} }},
   // Byte Oriented Operations
-    { "BCF",   OperatorInfo{.opcode=0x400, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x0E0, .bit_value=0x000} }},
-    { "BSF",   OperatorInfo{.opcode=0x500, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x0E0, .bit_value=0x000} }},
-    { "BTFSC", OperatorInfo{.opcode=0x600, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x0E0, .bit_value=0x000} }},
-    { "BTFSS", OperatorInfo{.opcode=0x700, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x0E0, .bit_value=0x000} }},
+    { "BCF",   OperatorInfo{.opcode=0x400, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x0E0} }},
+    { "BSF",   OperatorInfo{.opcode=0x500, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x0E0} }},
+    { "BTFSC", OperatorInfo{.opcode=0x600, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x0E0} }},
+    { "BTFSS", OperatorInfo{.opcode=0x700, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x01F, .literal=0x000, .byte=0x000, .bit_value=0x0E0} }},
   // Literal and Control Oriented Operations
     { "ANDLW", OperatorInfo{.opcode=0xE00, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x0FF, .byte=0x000, .bit_value=0x000} }},
     { "CALL",  OperatorInfo{.opcode=0x900, .masks=OperatorInfo::Masks{.destination=0x000, .file_address=0x000, .literal=0x0FF, .byte=0x000, .bit_value=0x000} }},

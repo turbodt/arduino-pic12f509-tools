@@ -2,7 +2,8 @@
 #define H_INCLUDE_TEST_CASE
 
 #include <iostream>
-#include<algorithm>
+#include <algorithm>
+#include <functional>
 #include <exception>
 #include <map>
 
@@ -25,6 +26,11 @@ namespace test_case {
 
     protected:
       std::map<const std::string, Test> * tests;
+      std::vector<TestCase const *> * test_cases;
+
+      TestCase * include_tests(TestCase const *);
+      TestCase * include(TestCase const *);
+
       TestCase const * assert(bool const &) const;
       template<typename T>
       TestCase const * assertEqual(T const &, T const &) const;
@@ -42,6 +48,7 @@ namespace test_case {
 }
 
 namespace test_case {
+
   template<typename T>
   TestCase const * TestCase::assertEqual(T const & a, T const & b) const {
     if (a != b) {

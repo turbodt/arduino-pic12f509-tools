@@ -20,14 +20,14 @@ namespace pic12f509 {
       masked_value *= 2;
       offset--;
     }
-    return (current_value & (~mask)) + masked_value;
+    return (current_value & (~mask)) | (masked_value & mask);
   }
 
   std::string const get_opcode_str(word_t const & instruction) {
     // default value
     std::string opcode_str = "UNKNOWN";
     // candidates
-    std::map<const word_t, const std::string> * candidates = new std::map<const word_t, const std::string>();
+    auto candidates = new std::map<const word_t, const std::string>();
     std::for_each(OPERATORS.begin(), OPERATORS.end(), [&](auto pair) {
       candidates->insert(std::pair<const word_t, const std::string> (pair.second.opcode, pair.first));
     });
@@ -35,13 +35,13 @@ namespace pic12f509 {
     // iteratively filtering
     word_t mask = 0x000;
     for (uint16_t p = 0x800; p > 0 && candidates->size() > 1 ; p = p >> 1) {
-      mask += (p & instruction);
+      mask += p;
       for (auto it = candidates->begin(); it != candidates->end(); ) {
         bool pass = (mask & it->first) == (mask & instruction);
-        if (!pass) {
+        if (pass) {
           it++;
         } else {
-          candidates->erase(it);
+          it = candidates->erase(it);
         }
       }
     }
