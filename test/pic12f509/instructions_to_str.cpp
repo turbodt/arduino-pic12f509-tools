@@ -1,6 +1,6 @@
 #include <iostream>
 #include "testcase.hpp"
-#include "../../src/pic12f509/pic12f509.instructions.hpp"
+#include "../../src/pic12f509/pic12f509.interface.hpp"
 
 class InstructionsToStrTestCase : public TestCase::TestCase {
 
@@ -11,6 +11,8 @@ class InstructionsToStrTestCase : public TestCase::TestCase {
       this->register_test("Test string to instruction 3", [&]() { test_str_to_instruction_003(); });
       this->register_test("Test string to instruction 4", [&]() { test_str_to_instruction_004(); });
       this->register_test("Test string to instruction 5", [&]() { test_str_to_instruction_005(); });
+      this->register_test("Test string to instruction 6", [&]() { test_str_to_instruction_006(); });
+      this->register_test("Test string to instruction 7", [&]() { test_str_to_instruction_007(); });
     }
     void test_str_to_instruction_001() {
       pic12f509::word_t instruction = pic12f509::str_to_instruction("NOP");
@@ -52,5 +54,13 @@ class InstructionsToStrTestCase : public TestCase::TestCase {
     void test_str_to_instruction_006() {
       pic12f509::word_t instruction = pic12f509::str_to_instruction("BSF 16h,2");
       this->assertEqual(instruction, (pic12f509::word_t) 0x556);
+    }
+
+    void test_str_to_instruction_007() {
+      pic12f509::word_t instruction;
+      instruction = pic12f509::str_to_instruction("GOTO 0x023");
+      this->assertEqual(instruction, (pic12f509::word_t) 0xA23);
+      instruction = pic12f509::str_to_instruction("GOTO 0x123");
+      this->assertEqual(instruction, (pic12f509::word_t) 0xB23);
     }
 };
