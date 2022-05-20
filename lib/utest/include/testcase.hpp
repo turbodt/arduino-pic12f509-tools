@@ -6,8 +6,9 @@
 #include <functional>
 #include <exception>
 #include <map>
+#include <vector>
 
-namespace test_case {
+namespace TestCase {
 
   typedef std::function<void()> Test;
 
@@ -47,7 +48,7 @@ namespace test_case {
   };
 }
 
-namespace test_case {
+namespace TestCase {
 
   template<typename T>
   TestCase const * TestCase::assertEqual(T const & a, T const & b) const {

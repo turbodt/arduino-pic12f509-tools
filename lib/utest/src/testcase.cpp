@@ -1,6 +1,6 @@
 #include "testcase.hpp"
 
-namespace test_case {
+namespace TestCase {
 
   TestCase::TestCase() {
     this->tests = new std::map<const std::string, Test>();

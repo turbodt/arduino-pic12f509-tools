@@ -1,8 +1,8 @@
 #include <iostream>
-#include "../testcase.hpp"
+#include "testcase.hpp"
 #include "../../src/pic12f509/pic12f509.instructions.hpp"
 
-class StrToInstructionsTestCase : public test_case::TestCase {
+class StrToInstructionsTestCase : public TestCase::TestCase {
 
   public:
     StrToInstructionsTestCase() : TestCase() {

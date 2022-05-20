@@ -1,10 +1,10 @@
 #include <iostream>
 #include "instructions_to_str.cpp"
 #include "str_to_instructions.cpp"
-#include "../testcase.hpp"
+#include "testcase.hpp"
 #include "../../src/pic12f509/pic12f509.instructions.hpp"
 
-class InstructionsTestCase : public test_case::TestCase {
+class InstructionsTestCase : public TestCase::TestCase {
 
   public:
     InstructionsTestCase() : TestCase() {
