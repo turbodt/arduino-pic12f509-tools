@@ -15,6 +15,9 @@ namespace pic12f509 {
     for (word_t i = mask; i > 0 && i % 2 == 0; i /= 2) {
       offset++;
     }
+    if (value > mask) {
+      throw ValueExceedsMaskException(value, mask);
+    }
     word_t masked_value = (mask >> offset) & value;
     while (offset > 0) {
       masked_value *= 2;

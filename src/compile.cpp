@@ -60,7 +60,7 @@ namespace command_compile {
 
       try {
         pic12f509::word_t opcode = pic12f509::str_to_instruction(first_word);
-      } catch (pic12f509::CommandDoesNotExistException & exception) {
+      } catch (pic12f509::BaseException & exception) {
         // is a label
         labels->insert(
           std::pair<const std::string, const pic12f509::addr_t>(
@@ -79,8 +79,12 @@ namespace command_compile {
       pic12f509::word_t instruction;
       try {
         instruction = pic12f509::str_to_instruction(line, labels);
-      } catch (pic12f509::CommandDoesNotExistException & exception) {
-        exception.update_message("On line " + std::to_string(line_cnt + 1) +": " + exception.what());
+      } catch (pic12f509::BaseException & exception) {
+        exception.update_message(
+          "Line " + std::to_string(line_cnt + 1)
+          + ":\t"
+          + line
+          + "\n" + exception.what());
         throw exception;
       }
       instructions->push_back(instruction);
