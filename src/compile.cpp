@@ -42,7 +42,8 @@ namespace command_compile {
   int get_instructions(
     const std::vector<std::string> * lines,
     std::vector<pic12f509::word_t> * instructions,
-    std::map<const std::string, const pic12f509::addr_t> * labels
+    std::map<const std::string, const pic12f509::addr_t> * labels,
+    std::vector<pic12f509::BaseException> * errors
   ) {
 
     for (int line_cnt = 0 ; line_cnt < lines->size() ; line_cnt++) {
@@ -85,7 +86,7 @@ namespace command_compile {
           + ":\t"
           + line
           + "\n" + exception.what());
-        throw exception;
+        errors->push_back(exception);
       }
       instructions->push_back(instruction);
     }
@@ -179,6 +180,7 @@ namespace command_compile {
     std::vector<std::string> * lines = new std::vector<std::string>();
     std::vector<pic12f509::word_t> * instructions = new std::vector<pic12f509::word_t>();
     std::map<const std::string, const pic12f509::addr_t> * labels = new std::map<const std::string, const pic12f509::addr_t>();
+    std::vector<pic12f509::BaseException> * errors = new std::vector<pic12f509::BaseException>();
     std::vector<std::string> * warnings = new std::vector<std::string>();
 
     // get code
@@ -189,16 +191,32 @@ namespace command_compile {
     // process
     // first read: get labels. Ignore instructions
     int error = 0;
-    error |= get_instructions(lines, instructions, labels);
+    error |= get_instructions(lines, instructions, labels, errors);
     if (error) {
       return error;
     }
     instructions->clear();
+    errors->clear();
     // second read: now the real process
-    error |= get_instructions(lines, instructions, labels);
+    error |= get_instructions(lines, instructions, labels, errors);
     if (error) {
       return error;
     }
+
+    // display errors, if any
+    if (errors->size()) {
+      std::for_each(
+        errors->begin(),
+        errors->end(),
+        [&](auto exception) {
+          std::cerr << exception.what() << "\n" << std::endl;
+        }
+      );
+      delete errors;
+      return 1;
+    }
+    delete errors;
+
     // get warnings
     get_warnings(lines, instructions, labels, warnings);
     delete lines;
