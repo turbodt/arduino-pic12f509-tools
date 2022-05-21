@@ -205,6 +205,7 @@ namespace command_compile {
 
     // display errors, if any
     if (errors->size()) {
+      std::cerr << "Thrown " << errors->size() << " errors during compilation:\n" << std::endl;
       std::for_each(
         errors->begin(),
         errors->end(),

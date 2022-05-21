@@ -34,7 +34,7 @@ namespace pic12f509 {
       word_t mask;
       explicit ValueExceedsMaskException(word_t const & value, word_t const & mask): value(value), mask(mask) {
         this->message = "Value `" + word_to_str(this->value)
-          + "` exceeds the reserved by the mask"
+          + "` exceeds the number of bits reserved by the mask "
           + word_to_str(this->mask) + ".";
       };
   };
