@@ -12,3 +12,13 @@ add_executable(
   src/pic12f509/pic12f509.instructions.cpp
   src/serial-comm/serial-comm.cpp
 )
+
+add_subdirectory(lib/utest)
+add_executable(
+  test
+  test/main.cpp
+  src/pic12f509/pic12f509.utils.cpp
+  src/pic12f509/pic12f509.instructions.cpp
+  src/serial-comm/serial-comm.cpp
+)
+target_link_libraries(test PRIVATE UTest)

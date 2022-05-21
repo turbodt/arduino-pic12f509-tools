@@ -42,7 +42,8 @@ namespace command_compile {
   int get_instructions(
     const std::vector<std::string> * lines,
     std::vector<pic12f509::word_t> * instructions,
-    std::map<const std::string, const pic12f509::addr_t> * labels
+    std::map<const std::string, const pic12f509::addr_t> * labels,
+    std::vector<pic12f509::BaseException> * errors
   ) {
 
     for (int line_cnt = 0 ; line_cnt < lines->size() ; line_cnt++) {
@@ -57,9 +58,10 @@ namespace command_compile {
       if (first_word.length() == 0 || is_line_comment(first_word)) {
         continue;
       }
-      pic12f509::word_t opcode = pic12f509::str_to_instruction(first_word);
 
-      if (opcode == pic12f509::INSTRUCTIONS.at("UNKNOWN")) {
+      try {
+        pic12f509::word_t opcode = pic12f509::str_to_instruction(first_word);
+      } catch (pic12f509::BaseException & exception) {
         // is a label
         labels->insert(
           std::pair<const std::string, const pic12f509::addr_t>(
@@ -74,17 +76,23 @@ namespace command_compile {
       if (line.length() == 0 || is_line_comment(line)) {
         continue;
       }
-      pic12f509::word_t instruction = pic12f509::str_to_instruction(line, labels);
-      if (instruction == pic12f509::INSTRUCTIONS.at("UNKNOWN")) {
-        std::cerr << "Unknown instruction '" << line
-          << "' at line " << line_cnt + 1 << std::endl;
-        return 1;
+
+      pic12f509::word_t instruction;
+      try {
+        instruction = pic12f509::str_to_instruction(line, labels);
+      } catch (pic12f509::BaseException & exception) {
+        exception.update_message(
+          "Line " + std::to_string(line_cnt + 1)
+          + ":\t"
+          + line
+          + "\n" + exception.what());
+        errors->push_back(exception);
       }
       instructions->push_back(instruction);
     }
     // complete
     if (instructions->size() % 2) {
-      instructions->push_back(pic12f509::INSTRUCTIONS.at("NOP"));
+      instructions->push_back(pic12f509::OPERATORS.at("NOP").opcode);
     }
 
     return 0;
@@ -172,6 +180,7 @@ namespace command_compile {
     std::vector<std::string> * lines = new std::vector<std::string>();
     std::vector<pic12f509::word_t> * instructions = new std::vector<pic12f509::word_t>();
     std::map<const std::string, const pic12f509::addr_t> * labels = new std::map<const std::string, const pic12f509::addr_t>();
+    std::vector<pic12f509::BaseException> * errors = new std::vector<pic12f509::BaseException>();
     std::vector<std::string> * warnings = new std::vector<std::string>();
 
     // get code
@@ -182,16 +191,33 @@ namespace command_compile {
     // process
     // first read: get labels. Ignore instructions
     int error = 0;
-    error |= get_instructions(lines, instructions, labels);
+    error |= get_instructions(lines, instructions, labels, errors);
     if (error) {
       return error;
     }
     instructions->clear();
+    errors->clear();
     // second read: now the real process
-    error |= get_instructions(lines, instructions, labels);
+    error |= get_instructions(lines, instructions, labels, errors);
     if (error) {
       return error;
     }
+
+    // display errors, if any
+    if (errors->size()) {
+      std::cerr << "Thrown " << errors->size() << " errors during compilation:\n" << std::endl;
+      std::for_each(
+        errors->begin(),
+        errors->end(),
+        [&](auto exception) {
+          std::cerr << exception.what() << "\n" << std::endl;
+        }
+      );
+      delete errors;
+      return 1;
+    }
+    delete errors;
+
     // get warnings
     get_warnings(lines, instructions, labels, warnings);
     delete lines;
